@@ -23,11 +23,12 @@ class InterPolyMesh():
     def __init__(self, V, F, VL):
         self.m = _convert_to_trimesh(V, F, VL)
 
-    def perface_coloring(self, color_map):
+    def coloring(self, color_map):
         m = self.m 
         m.request_face_colors()
         m.request_vertex_colors()
-        FL = np.zeros(m.n_faces())
+        FL = np.zeros(m.n_faces(), dtype=np.int)
+        VL = np.ones(m.n_vertices(), dtype=np.int)*-1
         
         for f in m.faces():
             h = m.halfedge_handle(f)
@@ -36,10 +37,10 @@ class InterPolyMesh():
             m.set_color(f, np.append(color_map[max_v_label, :], 1))
             FL[f.idx()] = max_v_label
         for v in m.vertices():
-            v_label = m.vertex_property("cur_v:label", v)
-            if v_label > -1:  m.set_color(v, np.append(color_map[v_label, :], 1))
+            VL[v.idx()] = m.vertex_property("cur_v:label", v)
+            if VL[v.idx()] > -1:  m.set_color(v, np.append(color_map[VL[v.idx()], :], 1))
             else : m.set_color(v, np.ones(4))
-        return m.face_colors(), FL 
+        return m.face_colors(), m.vertex_colors(), FL, VL
 
     def subdivide_region_boundary(self, n_subd=1):
         m = self.m 
@@ -104,7 +105,7 @@ class InterPolyMesh():
             vf, vt = m.from_vertex_handle(h), m.to_vertex_handle(h)
             vh1, vh2 = m.opposite_vh(h), m.opposite_he_opposite_vh(h)
             if m.vertex_property("cur_v:label", vf) != -1 or m.vertex_property("cur_v:label", vt) != -1: continue
-            if np.sign(m.vertex_property("cur_v:label", vh1)) *  np.sign(m.vertex_property("cur_v:label", vh2)) <= 0 :
+            if np.sign(m.vertex_property("cur_v:label", vh1)) *  np.sign(m.vertex_property("cur_v:label", vh2)) < 0 :
                 angle_t = m.calc_sector_angle(h) + m.calc_sector_angle(m.prev_halfedge_handle(m.opposite_halfedge_handle(h)))
                 angle_f = m.calc_sector_angle(m.prev_halfedge_handle(h)) + m.calc_sector_angle(m.opposite_halfedge_handle(h))
                 angle_1 = m.calc_sector_angle(m.next_halfedge_handle(h))
@@ -200,7 +201,7 @@ class InterPolyMesh():
     def minimize_quadric_energy(self, segment, n_step=5, alpha=1.0):
         m = self.m 
         X = [cp.Variable() for i in range(len(segment))]
-        X_constraints = [x >= 0.01 for x in X]+[x <= 1-0.01 for x in X]
+        X_constraints = [x >= 0.05 for x in X]+[x <= 1-0.05 for x in X]
         for x in X: x.value = 0.5
 
         # vertex mapping 
@@ -250,7 +251,7 @@ class InterPolyMesh():
                 l0, l2 = 1/np.clip(cp.norm(p0-p1).value, 0.01, 0.99), 1/np.clip(cp.norm(p2-p1).value, 0.01, 0.99)
                 E2 += cp.sum_squares((p0 * l0 +p2 * l2 -p1*(l0+l2))/(l0+l2) ) # 
                 # E2 += cp.sum_squares(p0 + p2  -p1*2 )
-            prob = cp.Problem(cp.Minimize(E1*0+E2*alpha), X_constraints)
+            prob = cp.Problem(cp.Minimize(E1+E2*alpha), X_constraints)
             assert(prob.is_dqcp())
             try: prob.solve("ECOS")
             except Exception as e: print(e)
@@ -270,9 +271,9 @@ class InterPolyMesh():
             self.interpoly_matrix[V_x[i], v_barycenter[V_x[i]][1].idx()] = x.value
             self.interpoly_matrix[V_x[i], v_barycenter[V_x[i]][0].idx()] = 1-x.value
 
-    def extract_inter_poly(self):
+    def extract_inter_polygons(self):
         m = self.m 
-        polygons = []
+        polygons, polygons_label = [], []
         for h in m.halfedges(): m.set_halfedge_property("visited", h, False)
         for h in m.halfedges():
             if m.halfedge_property("visited", h) or m.is_boundary(h): continue
@@ -288,13 +289,14 @@ class InterPolyMesh():
                     if m.halfedge_property("visited", hh) or  m.vertex_property("cur_v:label", m.opposite_vh(hh)) != poly_label: continue
                     h = hh 
                     break
-            polygons.append((poly_label, polygon))
-        return polygons
+            polygons.append(np.array(polygon, dtype=np.int))
+            polygons_label.append(poly_label)
+        return polygons, np.array(polygons_label, dtype=np.int)
 
-    def quadric_smoothing(self, n_step=10):
+    def quadric_smoothing(self, n_step=10, alpha = 1.0):
         print("quadric_smoothing")
         # build curve neighbors info
         inter_polygons = self._boundary_divide_and_packing()
         for i, curve_component in enumerate(inter_polygons):
             print("Solving sub smooth: ", i, "/", len(inter_polygons))
-            self.minimize_quadric_energy(curve_component, n_step)
+            self.minimize_quadric_energy(curve_component, n_step, alpha)
