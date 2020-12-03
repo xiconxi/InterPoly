@@ -1,16 +1,20 @@
 # InterPoly
 
-### 0. Overview
+### Overview
 
-<center>
-<img src="https://github.com/xiconxi/InterPoly/blob/main/imgs/RawPolyCurves.png" style="zoom:30%;" /> <img src="https://github.com/xiconxi/InterPoly/blob/main/imgs/RawPolyCurves.png" style="zoom:30%;" />
-</center>
+<img src="https://github.com/xiconxi/InterPoly/blob/main/imgs/RawPolyCurves.png" alt="alt text" width="400" height="whatever" /> <img src="https://github.com/xiconxi/InterPoly/blob/main/imgs/MinimumVariationPolyCurves.png" alt="alt text" width="400" height="whatever"/>
 
-### 1. 
+### Install 
+```
+git clone https://github.com/xiconxi/InterPoly/
+ipython
+```
 
+### Usage
+```
+import InterPoly
 
-### 2. 
-
+```
 
 
 
