@@ -1,13 +1,13 @@
 '''
 Author: Pupa
-LastEditTime: 2020-11-06 00:54:05
+LastEditTime: 2020-12-03 18:07:34
 '''
 import numpy as np
 import openmesh as om 
 import scipy.io as sio
 import scipy.sparse as sparse
 import cvxpy as cp 
-
+import numpy as np 
 
 def _convert_to_trimesh(V, F, VL) -> om.TriMesh:
     m = om.TriMesh()
@@ -18,11 +18,12 @@ def _convert_to_trimesh(V, F, VL) -> om.TriMesh:
     return m
 
 
-class MeshCurveCut():
+'''Deprecated Implementation'''
+class InterPolyMesh():
     def __init__(self, V, F, VL):
         self.m = _convert_to_trimesh(V, F, VL)
 
-    def perface_color(self, color_map):
+    def perface_coloring(self, color_map):
         m = self.m 
         m.request_face_colors()
         m.request_vertex_colors()
@@ -40,7 +41,7 @@ class MeshCurveCut():
             else : m.set_color(v, np.ones(4))
         return m.face_colors(), FL 
 
-    def subdivision_defined_border(self, n_subd=1):
+    def subdivide_region_boundary(self, n_subd=1):
         m = self.m 
         avg_len = np.mean([m.calc_edge_length(e) for e in m.edges()])/(2**n_subd)
         for subd_i in range(n_subd): 
@@ -53,19 +54,19 @@ class MeshCurveCut():
                     v_new = m.split(m.edge_handle(m.halfedge_handle(i)), (p0+p1)/2)
                     m.set_vertex_property("cur_v:label", v_new, vl0)
 
-    def sub_segmentation(self):
+    def extract_region_graph_boundary(self):
         m = self.m 
         n_vertices = m.n_vertices()
-        sub_seg_matrix = sparse.eye(n_vertices, format="dok")
+        interpoly_matrix = sparse.eye(n_vertices, format="dok")
         # split faces
         for e in m.edges():
-            labels = self.n_labels_diag(e)
+            labels = self._n_labels_diag(e)
             if len(labels[np.where( labels >= 0)]) == 4:
                 h = m.halfedge_handle(e, 0)
                 
-                sub_seg_matrix.resize((m.n_vertices()+1, n_vertices))
-                sub_seg_matrix[m.n_vertices(), m.from_vertex_handle(h).idx()] = 0.5
-                sub_seg_matrix[m.n_vertices(), m.to_vertex_handle(h).idx()] = 0.5  
+                interpoly_matrix.resize((m.n_vertices()+1, n_vertices))
+                interpoly_matrix[m.n_vertices(), m.from_vertex_handle(h).idx()] = 0.5
+                interpoly_matrix[m.n_vertices(), m.to_vertex_handle(h).idx()] = 0.5  
 
                 nvh = m.add_vertex((m.point(m.from_vertex_handle(h))+m.point(m.to_vertex_handle(h)))/2)
                 m.set_vertex_property("cur_v:label", nvh, -1)
@@ -77,9 +78,9 @@ class MeshCurveCut():
             vh0, vh1 = m.vertex_handle(ei[0]), m.vertex_handle(ei[1])
             vl0, vl1 = m.vertex_property("cur_v:label", vh0), m.vertex_property("cur_v:label", vh1)
             if np.min([vl0, vl1]) >= 0 and vl0 != vl1:
-                sub_seg_matrix.resize((m.n_vertices()+1, n_vertices))
-                sub_seg_matrix[m.n_vertices(), vh0.idx()] = 0.5
-                sub_seg_matrix[m.n_vertices(), vh1.idx()] = 0.5  
+                interpoly_matrix.resize((m.n_vertices()+1, n_vertices))
+                interpoly_matrix[m.n_vertices(), vh0.idx()] = 0.5
+                interpoly_matrix[m.n_vertices(), vh1.idx()] = 0.5  
                 
                 nvh = m.add_vertex((m.point(vh0)+m.point(vh1))/2)
                 m.split(m.edge_handle(i), nvh)
@@ -102,8 +103,8 @@ class MeshCurveCut():
         for h in m.halfedges():
             vf, vt = m.from_vertex_handle(h), m.to_vertex_handle(h)
             vh1, vh2 = m.opposite_vh(h), m.opposite_he_opposite_vh(h)
-            if m.vertex_property("cur_v:label", vf) == -1 and m.vertex_property("cur_v:label", vt) == -1 \
-                and m.vertex_property("cur_v:label", vh1) * m.vertex_property("cur_v:label", vh2) < 0 :
+            if m.vertex_property("cur_v:label", vf) != -1 or m.vertex_property("cur_v:label", vt) != -1: continue
+            if np.sign(m.vertex_property("cur_v:label", vh1)) *  np.sign(m.vertex_property("cur_v:label", vh2)) <= 0 :
                 angle_t = m.calc_sector_angle(h) + m.calc_sector_angle(m.prev_halfedge_handle(m.opposite_halfedge_handle(h)))
                 angle_f = m.calc_sector_angle(m.prev_halfedge_handle(h)) + m.calc_sector_angle(m.opposite_halfedge_handle(h))
                 angle_1 = m.calc_sector_angle(m.next_halfedge_handle(h))
@@ -111,18 +112,18 @@ class MeshCurveCut():
                 if angle_1 + angle_2 > np.pi * 0.67:
                     m.flip(m.edge_handle(h ))
 
-        self.sub_seg_matrix = sub_seg_matrix 
+        self.interpoly_matrix = interpoly_matrix 
         return self.m.points(), self.m.face_vertex_indices()
 
-    def n_labels(self, vh: om.VertexHandle):
+    def _n_labels(self, vh: om.VertexHandle):
         return np.unique([self.m.vertex_property("cur_v:label", v) for v in self.m.vv(vh)])
     
-    def n_labels(self, eh: om.EdgeHandle):
+    def _n_labels(self, eh: om.EdgeHandle):
         h1, h2 = self.m.halfedge_handle(eh, 0 ), self.m.halfedge_handle(eh, 1)
         labels = [self.m.vertex_property("cur_v:label", self.m.from_vertex_handle(h)) for h in (h1, h2)]
         return np.unique(labels)
 
-    def n_labels_diag(self, eh: om.EdgeHandle):
+    def _n_labels_diag(self, eh: om.EdgeHandle):
         h1, h2 = self.m.halfedge_handle(eh, 0 ), self.m.halfedge_handle(eh, 1)
         labels = [self.m.vertex_property("cur_v:label", self.m.from_vertex_handle(h)) for h in (h1, h2)]
         if self.m.opposite_vh(h1).is_valid():
@@ -131,8 +132,9 @@ class MeshCurveCut():
             labels.append(self.m.vertex_property("cur_v:label", self.m.opposite_vh(h2)))
         return np.unique(labels)
 
-    def curve_components(self, n_var=500):
+    def _boundary_divide_and_packing(self, n_var=500):
         m = self.m
+        # pre-labeling
         for v in m.vertices(): 
             if m.vertex_property("cur_v:label", v) != -1: continue # super border pixels
             cur_neighbors = []
@@ -142,12 +144,12 @@ class MeshCurveCut():
             if len(cur_neighbors) == 2:    
                 m.set_vertex_property("cur_v:neighbor", v, cur_neighbors)
                 m.set_vertex_property("cur_v:smoothed", v, False)
-                m.split_edge()
                 assert(len(cur_neighbors) == 2)
             elif len(cur_neighbors) > 2:
                 m.set_vertex_property("cur_v:label", v, -2)
-            
-        curve_components = []
+        
+        print("dividing for closed boundary")
+        inter_polygons = []
         for v in m.vertices():
             if m.vertex_property("cur_v:label", v) != -2: continue # super border vertex
             m.set_vertex_property("cur_v:smoothed", v, True)
@@ -164,10 +166,11 @@ class MeshCurveCut():
                         vv = vvv
                         
                 if len(segs) == 1: continue
-                if len(curve_components) and  len(segs) + len(curve_components[-1]) < n_var:
-                    curve_components[-1] += segs
-                else: curve_components.append(segs)
+                if len(inter_polygons) and  len(segs) + len(inter_polygons[-1]) < n_var:
+                    inter_polygons[-1] += segs
+                else: inter_polygons.append(segs)
       
+        print("dividing for open boundary")
         for v in m.vertices():
             if m.vertex_property("cur_v:label", v) != -1: continue 
             if m.vertex_property("cur_v:smoothed", v): continue
@@ -182,18 +185,19 @@ class MeshCurveCut():
                     break
                 if m.vertex_property("cur_v:smoothed", vv) : break 
             if len(segs) == 1: continue
-            if len(curve_components) and  len(segs) + len(curve_components[-1]) < n_var:
-                curve_components[-1] += segs
-            else: curve_components.append(segs)
+            if len(inter_polygons) and  len(segs) + len(inter_polygons[-1]) < n_var:
+                inter_polygons[-1] += segs
+            else: inter_polygons.append(segs)
             # print(len(segs), segs)
             
+        print("post checking")
         for v in m.vertices():
             if m.vertex_property("cur_v:label", v) == -1:
                 assert(m.vertex_property("cur_v:smoothed", v))
             
-        return curve_components
+        return inter_polygons
 
-    def quadric_smooth_segment(self, segment, n_step=5, alpha=1.0):
+    def minimize_quadric_energy(self, segment, n_step=5, alpha=1.0):
         m = self.m 
         X = [cp.Variable() for i in range(len(segment))]
         X_constraints = [x >= 0.01 for x in X]+[x <= 1-0.01 for x in X]
@@ -263,10 +267,10 @@ class MeshCurveCut():
             assert(-1e-6 <= x.value <= 1)
             p1 = x.value*m.point(v_barycenter[V_x[i]][1])+(1-x.value)*m.point(v_barycenter[V_x[i]][0])
             m.set_point(m.vertex_handle(V_x[i]), p1)
-            self.sub_seg_matrix[V_x[i], v_barycenter[V_x[i]][1].idx()] = x.value
-            self.sub_seg_matrix[V_x[i], v_barycenter[V_x[i]][0].idx()] = 1-x.value
+            self.interpoly_matrix[V_x[i], v_barycenter[V_x[i]][1].idx()] = x.value
+            self.interpoly_matrix[V_x[i], v_barycenter[V_x[i]][0].idx()] = 1-x.value
 
-    def polygon_extract(self):
+    def extract_inter_poly(self):
         m = self.m 
         polygons = []
         for h in m.halfedges(): m.set_halfedge_property("visited", h, False)
@@ -287,10 +291,10 @@ class MeshCurveCut():
             polygons.append((poly_label, polygon))
         return polygons
 
-    def quadric_smooth(self, n_step=10):
+    def quadric_smoothing(self, n_step=10):
         print("quadric_smoothing")
         # build curve neighbors info
-        curve_components = self.curve_components()
-        for i, curve_component in enumerate(curve_components):
-            print("Solving sub smooth: ", i, "/", len(curve_components))
-            self.quadric_smooth_segment(curve_component, n_step)
+        inter_polygons = self._boundary_divide_and_packing()
+        for i, curve_component in enumerate(inter_polygons):
+            print("Solving sub smooth: ", i, "/", len(inter_polygons))
+            self.minimize_quadric_energy(curve_component, n_step)
