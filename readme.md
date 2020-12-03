@@ -4,6 +4,8 @@
 
 <img src="https://github.com/xiconxi/InterPoly/blob/main/imgs/RawPolyCurves.png" alt="alt text" width="400" height="whatever" /> <img src="https://github.com/xiconxi/InterPoly/blob/main/imgs/MinimumVariationPolyCurves.png" alt="alt text" width="400" height="whatever"/>
 
+![](https://github.com/xiconxi/InterPoly/blob/main/imgs/brain_interpoly.gif)
+
 ### Install 
 ```
 git clone https://github.com/xiconxi/InterPoly/

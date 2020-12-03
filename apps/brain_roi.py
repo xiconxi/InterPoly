@@ -26,7 +26,7 @@ if __name__ == "__main__":
     _FC, _VC, _FL, _VL  = inter_polyer.coloring(color_map)
     om.write_mesh("../runtime/interpoly_brain.off", inter_polyer.m, face_color=True, vertex_color=True)
     
-    # inter_polyer.quadric_smoothing(n_step=2)
+    inter_polyer.quadric_smoothing(n_step=2)
 
     interpoly_x = inter_polyer.interpoly_matrix
     # x is shared weights for triangle mesh with the same topology(connection)
