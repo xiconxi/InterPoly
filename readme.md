@@ -9,7 +9,17 @@
 ### Install 
 ```
 git clone https://github.com/xiconxi/InterPoly/
-ipython
+cd InterPoly
+pip install -r requirements.txt
+```
+
+## Example
+```
+cd apps/
+python brain_roi.py
+# visualization by pyvista
+python brain_vis.py
+
 ```
 
 ### Usage
