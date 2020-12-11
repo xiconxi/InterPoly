@@ -1,3 +1,5 @@
 .vscode
 __pycache__/
 runtime/tba/
+runtime/*.off
+runtime/*.mat

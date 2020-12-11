@@ -1,0 +1,46 @@
+<circle cx="1024.000000" cy="2048.000000" class="landmark" />
+<circle cx="1024.000000" cy="0.000000"  class="landmark" />
+<circle cx="2048.000000" cy="1024.000000"  class="landmark" />
+<circle cx="0.000000" cy="1024.000000"  class="landmark" />
+<circle cx="1433.600000" cy="1024.000000" class="mark" />
+<text x="1405.600000" y="1072.000000" class="mark">C3</text>
+<circle cx="614.400000" cy="1024.000000" class="mark" />
+<text x="628.400000" y="1072.000000" class="mark">C4</text>
+<circle cx="1024.000000" cy="1024.000000" class="mark" />
+<text x="996.000000" y="1072.000000" class="mark">Cz</text>
+<circle cx="1351.680000" cy="1436.775494" class="mark" />
+<text x="1323.680000" y="1412.775494" class="mark">F3</text>
+<circle cx="716.800000" cy="1443.699721" class="mark" />
+<text x="730.800000" y="1419.699721" class="mark">F4</text>
+<circle cx="1597.440000" cy="1493.959952" class="mark" />
+<text x="1569.440000" y="1469.959952" class="mark">F7</text>
+<circle cx="450.560000" cy="1507.014427" class="mark" />
+<text x="464.560000" y="1483.014427" class="mark">F8</text>
+<circle cx="1024.000000" cy="1843.200000" class="mark" />
+<text x="996.000000" y="1819.200000" class="mark">Fpz</text>
+<circle cx="1208.320000" cy="1830.339397" class="mark" />
+<text x="1180.320000" y="1806.339397" class="mark">Fp1</text>
+<circle cx="819.200000" cy="1822.583144" class="mark" />
+<text x="833.200000" y="1798.583144" class="mark">Fp2</text>
+<circle cx="1024.000000" cy="1433.600000" class="mark" />
+<text x="996.000000" y="1409.600000" class="mark">Fz</text>
+<circle cx="1208.320000" cy="217.660603" class="mark" />
+<text x="1180.320000" y="265.660603" class="mark">O1</text>
+<circle cx="819.200000" cy="225.416856" class="mark" />
+<text x="833.200000" y="273.416856" class="mark">O2</text>
+<circle cx="1351.680000" cy="611.224506" class="mark" />
+<text x="1323.680000" y="659.224506" class="mark">P3</text>
+<circle cx="696.320000" cy="611.224493" class="mark" />
+<text x="710.320000" y="659.224493" class="mark">P4</text>
+<circle cx="1024.000000" cy="614.400000" class="mark" />
+<text x="996.000000" y="662.400000" class="mark">Pz</text>
+<circle cx="1843.200000" cy="1024.000000" class="mark" />
+<text x="1815.200000" y="1072.000000" class="mark">T3</text>
+<circle cx="204.800000" cy="1024.000000" class="mark" />
+<text x="218.800000" y="1072.000000" class="mark">T4</text>
+<circle cx="1597.440000" cy="540.985604" class="mark" />
+<text x="1569.440000" y="588.985604" class="mark">T5</text>
+<circle cx="450.560000" cy="554.040017" class="mark" />
+<text x="464.560000" y="602.040017" class="mark">T6</text>
+<circle cx="1003.520000" cy="205.204225" class="mark" />
+<text x="1003.560000" y="195.040017" class="mark">Oz</text>

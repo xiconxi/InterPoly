@@ -36,7 +36,7 @@ def LabeledScalpSmoothing(V, VT, F, VL, color_map, n_steps = 20, prev_smooth_fil
     tba_xmls = ''
     for i in range(len(polygons)):
         label, polygon = polygons_label[i], polygons[i]
-        color = color_map[label].astype(np.int)
+        color = (color_map[label]*255).astype(np.int)
         poly_str = '<polygon points="'+''.join(["{:.3f},{:.3f} ".format(_VT[v][0], _VT[v][1]) for v in polygon])
         poly_str += '" fill="'+'#%02x%02x%02x' % (color[0], color[1], color[2])+ '" stroke="white" stroke-width="8"/>\n'
         tba_xmls += poly_str
@@ -44,31 +44,39 @@ def LabeledScalpSmoothing(V, VT, F, VL, color_map, n_steps = 20, prev_smooth_fil
     return _F, _FL, interpoly_matrix, tba_xmls, inter_polyer.m
 
 
-def GenerateTBATexture(V, F, FL, VT):
-    pass 
-    V, F = cpc_mesh.points(), cpc_mesh.face_vertex_indices()
-    mat = sio.loadmat("/Users/hotpot/Code/TBA/TPenPy3/Data/TBA/Atlas.mat")
-    for tba_name in  ["lpba", "aal", "ba"]:
-        VL = np.ones(cpc_mesh.n_vertices(), dtype=np.int) * -2
-        VL[:9801], color_map = mat[tba_name+"_label"].reshape(-1), mat[tba_name+"_color"]
+# tool functions
+def gen_texture_png(axis, l1020, mark, texture_name, atlas_svg_str=""):
+    import cairosvg
+    from PIL import Image
+    import os
 
-        smoother = Smoother(V, F, VL)
-        smoother.subdivision_defined_border(0)
-        NV_sub_seg, NF = smoother.sub_segmentation()
+    svg_header = '<svg width="2048" height="2048" viewBox="0 0 2048 2048" xmlns="http://www.w3.org/2000/svg" >'
+    style_header = '<style type="text/css" >'
+    l1020_style = '''text.mark { fill: #ffffffff; font-size: 50px; stroke: #000000ff; stroke-width: 1.5;}
+                    circle.landmark {r: 20; fill: #ff0000ff; stroke: black; stroke-width: 2;}
+                    circle.mark { r: 15;fill: #e5e599ff;stroke: black;stroke-width: 2;}'''
+    axis_style = '''polyline.line {fill: None;stroke: #f2f2f2ff;stroke-width: 3;}
+                    polyline.m_mark {fill: None;stroke: #333333ff;stroke-width: 5;}
+                    polyline.outer_mark {fill: #ffccb2ff;stroke: #333333ff;stroke-width: 10;}
+                    polyline.axis {fill: None;stroke: #333333ff;stroke-width: 6;}'''
 
-        np.savez("./output/"+tba_name+".F", NF)
+    if atlas_svg_str != "":
+        axis_style = axis_style.replace("#ffccb2ff", "None")  
 
-        FC, FL = smoother.perface_color(color_map)
+    svg_string = svg_header + style_header + l1020_style + axis_style + "</style>\n" + atlas_svg_str
+    svg_string += open("./data/tba_xml/axis_uv.xml").read() * axis
+    svg_string += open("./data/tba_xml/1020.xml").read() * l1020
+    svg_string += open("./data/tba_xml/mark.xml").read() * mark
+    svg_string += "</svg>"  
 
-        np.savez("./output/"+tba_name+".FL", FL)
+    outpng = "../runtime/tba/png/"+ texture_name + (".1020." if l1020 else '.') + ("axis." if axis else '')+ ("text." if mark else '') + "png"
+    
+    cairosvg.svg2png(bytestring=svg_string, write_to=open(outpng, 'wb')) 
+    Image.open(outpng).convert("RGB").save(outpng.replace("png", "jpg"), quality=100, format='JPEG')
+    print(svg_string, file=open(outpng.replace("png", "svg"), "w"))
+    # return  outpng
 
-        om.write_mesh("./output/"+tba_name+".x.off", smoother.m, face_color=True, vertex_color=True)
 
-        smoother.quadric_smooth(n_step=n_steps)
-        sparse.save_npz("./output/"+tba_name+".x", smoother.sub_seg_matrix.tocsr())
-        
-        om.write_mesh("./output/"+tba_name+".smoothed.off", smoother.m, face_color=True, vertex_color=True)
-        
 if __name__ == "__main__":
     def gen_cpc_coord(inner_sample=99):
         n = inner_sample
@@ -90,7 +98,7 @@ if __name__ == "__main__":
             uv[i, 0] = 1-row[1]
         return uv 
 
-    n_steps = 1
+    n_steps = 20
     
     cpc_mesh = om.read_trimesh("./data/lsmesh-cpc.obj")
     V, F = cpc_mesh.points(), cpc_mesh.face_vertex_indices()
@@ -101,12 +109,15 @@ if __name__ == "__main__":
         print(mat[tba_name+"_label"].shape, mat[tba_name+"_color"].shape)
 
         VL[:9801], color_map = mat[tba_name+"_label"].reshape(-1), mat[tba_name+"_color"]
-        mesh1  = "../runtime/tba/"+tba_name+".prev.off"
-        mesh2  = "../runtime/tba/"+tba_name+".smoothed.off"
+        mesh1  = "../runtime/tba/off/"+tba_name+".prev.off"
+        mesh2  = "../runtime/tba/off/"+tba_name+".smoothed.off"
         _F, _FL, x, poly_xmls, interpoly_Mesh = LabeledScalpSmoothing(V, VT, F, VL, color_map, n_steps, mesh1, mesh2)
 
         np.savez("../runtime/tba/"+tba_name+".F", _F)
         np.savez("../runtime/tba/"+tba_name+".FL", _FL)
         sparse.save_npz("../runtime/tba/"+tba_name+".x", x.tocsr())
-        print(poly_xmls, file=open("../runtime/tba/"+tba_name+".xml", "w"))    
+        print(poly_xmls, file=open("../runtime/tba/xml/"+tba_name+".xml", "w"))    
+
+        for i in (4+2+1, 4+2, 4+1, 4):
+            gen_texture_png(i&4, i&2, i&1, tba_name, poly_xmls)
 
