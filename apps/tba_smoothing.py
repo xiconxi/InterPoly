@@ -90,7 +90,7 @@ if __name__ == "__main__":
             uv[i, 0] = 1-row[1]
         return uv 
 
-    n_steps = 20
+    n_steps = 1
     
     cpc_mesh = om.read_trimesh("./data/lsmesh-cpc.obj")
     V, F = cpc_mesh.points(), cpc_mesh.face_vertex_indices()
@@ -101,13 +101,12 @@ if __name__ == "__main__":
         print(mat[tba_name+"_label"].shape, mat[tba_name+"_color"].shape)
 
         VL[:9801], color_map = mat[tba_name+"_label"].reshape(-1), mat[tba_name+"_color"]
-        mesh1  = "./runtime/tba/"+tba_name+".prev.off"
-        mesh2  = "./runtime/tba/"+tba_name+".smoothed.off"
+        mesh1  = "../runtime/tba/"+tba_name+".prev.off"
+        mesh2  = "../runtime/tba/"+tba_name+".smoothed.off"
         _F, _FL, x, poly_xmls, interpoly_Mesh = LabeledScalpSmoothing(V, VT, F, VL, color_map, n_steps, mesh1, mesh2)
 
         np.savez("../runtime/tba/"+tba_name+".F", _F)
         np.savez("../runtime/tba/"+tba_name+".FL", _FL)
         sparse.save_npz("../runtime/tba/"+tba_name+".x", x.tocsr())
         print(poly_xmls, file=open("../runtime/tba/"+tba_name+".xml", "w"))    
-        om.write_mesh(, interpoly_Mesh, face_color=True, vertex_color=True)
 
