@@ -48,18 +48,19 @@ def save_obj(V, VC, F, file_name):
 if __name__ == "__main__":
     import sys 
 
-    p = pv.Plotter(shape=(1, 2), border=False, window_size=(600*2, 600*1))
+
+    p = pv.Plotter(shape=(1, 2), border=False, window_size=(300*2, 300*1))
 
 
     p.subplot(0, 0)
-    mesh0 = om.read_trimesh("../runtime/interpoly_brain.off", face_color=True)
+    mesh0 = om.read_trimesh("../runtime/tba/off/aal.prev.off", face_color=True)
     mesh0.update_vertex_normals()
     p.add_actor(vtk_actor(mesh0.points(), mesh0.face_vertex_indices(), mesh0.face_colors(), opacity=1))
 
 
 
     p.subplot(0, 1)
-    mesh1 = om.read_trimesh("../runtime/interpoly_smoothed_brain.off", face_color=True)
+    mesh1 = om.read_trimesh("../runtime/tba/off/aal.smoothed.off", face_color=True)
     p.add_actor(vtk_actor(mesh1.points(), mesh1.face_vertex_indices(), mesh1.face_colors(), opacity=1))
     
        
@@ -67,6 +68,6 @@ if __name__ == "__main__":
     p.link_views()  # link all the views
     p.show(auto_close=False)
     viewup = [0, 0, 1]
-    p.open_gif("../runtime/smoothed_brain.gif")
-    p.orbit_on_path(p.generate_orbital_path(factor=2.0, n_points=32, viewup=viewup, shift=0.2), write_frames=True, viewup=viewup)
+    p.open_gif("../runtime/gif/aal_interpoly.gif")
+    p.orbit_on_path(p.generate_orbital_path(factor=2.0, n_points=16, viewup=viewup, shift=0.2), write_frames=True, viewup=viewup)
     p.close()

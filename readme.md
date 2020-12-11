@@ -10,6 +10,12 @@
 
 ![](https://github.com/xiconxi/InterPoly/blob/main/imgs/brain_interpoly.gif)
 
+![](https://github.com/xiconxi/InterPoly/blob/main/imgs/aal_interpoly.gif)
+
+![](https://github.com/xiconxi/InterPoly/blob/main/imgs/lpba_interpoly.gif)
+
+![](https://github.com/xiconxi/InterPoly/blob/main/imgs/ba_interpoly.gif)
+
 ### Install 
 ```
 git clone https://github.com/xiconxi/InterPoly/
