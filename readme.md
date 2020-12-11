@@ -1,3 +1,7 @@
+<!--
+ * @Author: Pupa
+ * @LastEditTime: 2020-12-11 16:47:08
+-->
 # InterPoly
 
 ### Overview
@@ -38,7 +42,7 @@ _, _F = inter_polyer.extract_region_graph_boundary()
 _FC, _VC, _FL, _VL  = inter_polyer.coloring(color_map)
 om.write_mesh("../runtime/interpoly_brain.off", inter_polyer.m, face_color=True, vertex_color=True)
 
-# inter_polyer.quadric_smoothing(n_step=2)
+inter_polyer.quadric_smoothing(n_step=20)
 
 interpoly_x = inter_polyer.interpoly_matrix
 # x is shared weights for triangle mesh with the same topology(connection)
